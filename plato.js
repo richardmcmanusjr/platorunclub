@@ -92,6 +92,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     preloadMedia();
 
+    // Initialize Next Run Countdown from Strava
+    initializeNextRunCountdown();
+
     // Mobile menu toggle
     const hamburger = document.getElementById('menuButton');
     const navLinks = document.getElementById('navLinks');
@@ -221,3 +224,151 @@ if (prefersReducedMotion) {
         shape.style.animation = 'none';
     });
 }
+
+// Strava Next Run Countdown
+async function initializeNextRunCountdown() {
+    const countdownElement = document.getElementById('countdownText');
+    if (!countdownElement) return;
+
+    try {
+        // Try to fetch club data from Strava
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const stravaUrl = 'https://www.strava.com/clubs/platorunclub';
+        
+        const response = await fetch(proxyUrl + stravaUrl, { timeout: 5000 });
+        const html = await response.text();
+
+        // Parse the HTML to find events
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Look for event dates in the page
+        const nextRunDate = extractNextRunDate(doc);
+        
+        if (nextRunDate) {
+            startCountdown(nextRunDate, countdownElement);
+            return;
+        }
+    } catch (error) {
+        console.log('Strava fetch error:', error);
+    }
+
+    // Fallback: Use default run schedule (Tuesday & Thursday at 6:30 AM, Wednesday at 5:30 PM)
+    const nextRun = getNextScheduledRun();
+    if (nextRun) {
+        startCountdown(nextRun, countdownElement);
+    } else {
+        countdownElement.innerHTML = '<strong>Next run coming soon →</strong>';
+    }
+}
+
+function getNextScheduledRun() {
+    // Default schedule: Tuesdays & Thursdays at 6:30 AM, Wednesdays at 5:30 PM
+    const now = new Date();
+    
+    // 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday
+    const scheduledDays = {
+        2: { hour: 6, minute: 30 },   // Tuesday
+        3: { hour: 17, minute: 0 },   // Wednesday (5:00 PM)
+        4: { hour: 6, minute: 30 }    // Thursday
+    };
+
+    // Check the next 8 days for a scheduled run
+    for (let i = 0; i < 8; i++) {
+        const checkDate = new Date(now);
+        checkDate.setDate(checkDate.getDate() + i);
+        const dayOfWeek = checkDate.getDay();
+        
+        if (scheduledDays[dayOfWeek]) {
+            const nextRun = new Date(checkDate);
+            nextRun.setHours(scheduledDays[dayOfWeek].hour, scheduledDays[dayOfWeek].minute, 0, 0);
+            
+            // Only return if it's in the future
+            if (nextRun > now) {
+                return nextRun;
+            }
+        }
+    }
+
+    return null;
+}
+
+function extractNextRunDate(doc) {
+    // Try to find event information in common Strava page elements
+    // This is a simplified extraction - may need adjustment based on actual Strava HTML structure
+    
+    const eventElements = doc.querySelectorAll('[data-test-id="event"], .event, [class*="event"]');
+    
+    for (let el of eventElements) {
+        const text = el.textContent;
+        const dateMatch = text.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+        if (dateMatch) {
+            const [, date, hour, minute, ampm] = dateMatch;
+            try {
+                let date24Hour = parseInt(hour);
+                if (ampm && ampm.toUpperCase() === 'PM' && date24Hour !== 12) {
+                    date24Hour += 12;
+                } else if (ampm && ampm.toUpperCase() === 'AM' && date24Hour === 12) {
+                    date24Hour = 0;
+                }
+                const eventDate = new Date(date);
+                eventDate.setHours(date24Hour, parseInt(minute), 0, 0);
+                if (eventDate > new Date()) {
+                    return eventDate;
+                }
+            } catch (e) {
+                console.error('Date parse error:', e);
+            }
+        }
+    }
+    
+    return null;
+}
+
+function startCountdown(targetDate, element) {
+    let initialized = false;
+
+    function updateCountdown() {
+        const now = new Date();
+        const timeRemaining = targetDate - now;
+
+        if (timeRemaining <= 0) {
+            const countdownNumbers = element.querySelector('.countdown-numbers');
+            if (countdownNumbers) {
+                countdownNumbers.textContent = 'NOW';
+            }
+            return;
+        }
+
+        const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+        let countdownContent = '';
+        if (days > 0) {
+            countdownContent = `<span class="countdown-item">${days}<span class="countdown-unit">day${days !== 1 ? 's' : ''}</span></span><span class="countdown-item">${hours}<span class="countdown-unit">hr${hours !== 1 ? 's' : ''}</span></span><span class="countdown-item">${minutes}<span class="countdown-unit">min${minutes !== 1 ? 's' : ''}</span></span><span class="countdown-item">${seconds}<span class="countdown-unit">sec${seconds !== 1 ? 's' : ''}</span></span>`;
+        } else if (hours > 0) {
+            countdownContent = `<span class="countdown-item">${hours}<span class="countdown-unit">hr${hours !== 1 ? 's' : ''}</span></span><span class="countdown-item">${minutes}<span class="countdown-unit">min${minutes !== 1 ? 's' : ''}</span></span><span class="countdown-item">${seconds}<span class="countdown-unit">sec${seconds !== 1 ? 's' : ''}</span></span>`;
+        } else {
+            countdownContent = `<span class="countdown-item">${minutes}<span class="countdown-unit">min${minutes !== 1 ? 's' : ''}</span></span><span class="countdown-item">${seconds}<span class="countdown-unit">sec${seconds !== 1 ? 's' : ''}</span></span>`;
+        }
+
+        if (!initialized) {
+            element.innerHTML = `<a href="https://www.strava.com/clubs/platorunclub" target="_blank"><img class="next-run-label" src="Strava_text.png" alt="Next Run On Strava"><span class="countdown-numbers">${countdownContent}</span></a>`;
+            initialized = true;
+        } else {
+            const countdownNumbers = element.querySelector('.countdown-numbers');
+            if (countdownNumbers) {
+                countdownNumbers.innerHTML = countdownContent;
+            }
+        }
+    }
+
+    // Update immediately
+    updateCountdown();
+    
+    // Update every second
+    setInterval(updateCountdown, 1000);
+}
+
