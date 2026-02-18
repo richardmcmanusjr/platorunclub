@@ -1741,13 +1741,13 @@ a.event-card:hover {
     .hero {
         height: auto;
         min-height: 100vh;
-        padding-top: 6rem;
+        padding-top: 0rem;
         padding-bottom: 4rem;
     }
 
     .hero-content {
         grid-template-columns: 1fr;
-        padding: 1rem 1.5rem;
+        padding: 0rem 1.5rem;
     }
 
     .hero-visual {
