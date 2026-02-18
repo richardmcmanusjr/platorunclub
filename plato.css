@@ -42,7 +42,8 @@ body {
     color: var(--ink);
     background-color: var(--paper);
     overflow-x: hidden;
-        position: relative;
+    position: relative;
+    padding-top: 70px;
 }
 
 body::before{
@@ -91,12 +92,14 @@ body::before{
 /* Keep a single continuous background texture */
 .about,
 .events,
+.instagram-section,
 .copyright-footer {
         background: transparent;
 }
 
 .about::before,
 .events::before,
+.instagram-section::before,
 .copyright-footer::before {
         display: none;
 }
@@ -856,10 +859,10 @@ a:hover {
 
 /* About Section */
 .about {
-    padding: 6rem 0;
+    padding: 2rem 0;
     background: transparent;
     position: relative;
-    min-height: 95vh;
+    min-height: 50vh;
     display: flex;
     align-items: center;
 }
@@ -1149,10 +1152,13 @@ a:hover {
     margin-bottom: 0.5rem;
 }
 
-.events .section-subtitle {
+.events .section-subtitle,
+.instagram-section .section-subtitle {
     text-align: center;
     margin-bottom: 3rem;
+    margin-top: 0;
     font: var(--font-accent);
+    font-size: 1rem;
     font-weight: 100;
 }
 
@@ -2052,5 +2058,53 @@ a.event-card:hover {
     font: var(--font-accent);
     font-size: 0.65rem;
     font-weight: 100;
+}
+
+/* Instagram Section */
+.instagram-section {
+    padding: 5rem 0 0rem 0;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    min-height: 95vh;
+}
+
+.instagram-section .container {
+    width: 100%;
+}
+
+.instagram-feed-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+    justify-items: center;
+    max-width: 650px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    z-index: 1;
+}
+
+.instagram-feed-grid blockquote {
+    max-width: 300px !important;
+    width: 100% !important;
+}
+
+@media (max-width: 768px) {
+    .instagram-section {
+        padding: 3rem 0 4rem 0;
+    }
+
+    .instagram-feed-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .cta-button {
+        width: 100%;
+        text-align: center;
+    }
 }
 
