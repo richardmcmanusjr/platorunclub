@@ -302,7 +302,7 @@ function getNextScheduledRun() {
     
     // 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday
     const scheduledDays = {
-        0: { hour: 9, minute: 00 },    // Sunday (6:30 AM)
+        0: { hour: 9, minute: 0o0 },    // Sunday (9:00 AM)
         3: { hour: 17, minute: 30 },   // Wednesday (5:30 PM)
     };
 
