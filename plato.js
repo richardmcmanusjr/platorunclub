@@ -92,6 +92,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     preloadMedia();
 
+    // Handle Instagram embed animations
+    function animateInstagramPosts() {
+        const blockquotes = document.querySelectorAll('.instagram-feed-grid blockquote');
+        blockquotes.forEach((blockquote) => {
+            blockquote.classList.add('loaded');
+        });
+    }
+    
+    // Wait for Instagram embed script to process
+    if (window.instgrm) {
+        window.instgrm.Embeds.process().then(() => {
+            animateInstagramPosts();
+        }).catch(() => {
+            // Fallback if promise fails
+            setTimeout(animateInstagramPosts, 500);
+        });
+    }
+    
+    // Also try after a short delay in case Instagram script hasn't loaded yet
+    setTimeout(() => {
+        if (window.instgrm) {
+            window.instgrm.Embeds.process().then(() => {
+                animateInstagramPosts();
+            }).catch(() => {
+                animateInstagramPosts();
+            });
+        } else {
+            animateInstagramPosts();
+        }
+    }, 100);
+    
+    // Fallback: trigger animation after a reasonable delay
+    setTimeout(animateInstagramPosts, 1000);
+
     // Initialize Next Run Countdown from Strava
     initializeNextRunCountdown();
 

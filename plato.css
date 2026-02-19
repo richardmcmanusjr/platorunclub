@@ -2076,11 +2076,12 @@ a.event-card:hover {
 
 .instagram-feed-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     margin-bottom: 2rem;
     justify-items: center;
     align-items: center;
+    justify-content: center;
     max-width: 700px;
     margin-left: auto;
     margin-right: auto;
@@ -2100,6 +2101,69 @@ a.event-card:hover {
     max-width: 100% !important;
     width: 100% !important;
 }
+
+/* Base state (before loaded) */
+.instagram-feed-grid blockquote.instagram-media {
+  position: relative;
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  filter: blur(5px);
+  transition: opacity 1000ms cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              transform 1000ms cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              filter 800ms ease-out;
+  will-change: opacity, transform, filter;
+}
+
+/* Skeleton shimmer overlay */
+.instagram-feed-grid blockquote.instagram-media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.10) 40%,
+    rgba(255,255,255,0.04) 80%
+  );
+  background-size: 200% 100%;
+  animation: ig-shimmer 1.8s infinite linear;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Reveal */
+.instagram-feed-grid blockquote.instagram-media.loaded {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+.instagram-feed-grid blockquote.instagram-media.loaded::before {
+  opacity: 0;
+  animation: none;
+  transition: opacity 400ms ease-out;
+  pointer-events: none;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .instagram-feed-grid blockquote.instagram-media {
+    transition: none;
+    transform: none;
+    filter: none;
+  }
+  .instagram-feed-grid blockquote.instagram-media::before {
+    animation: none;
+  }
+}
+
+@keyframes ig-shimmer {
+  0% { background-position: 200% 0; }
+  50% { background-position: 0% 0; }
+  100% { background-position: -200% 0; }
+}
+
 
 @media (max-width: 768px) {
     .instagram-section {
