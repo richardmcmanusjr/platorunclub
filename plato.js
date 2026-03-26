@@ -387,3 +387,170 @@ function startCountdown(targetDate, element) {
     setInterval(updateCountdown, 1000);
 }
 
+// Reveal painting effect
+function initRevealPainting() {
+    const wrapper = document.getElementById('revealWrapper');
+    const canvas = document.getElementById('revealCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const revealImg = new Image();
+    revealImg.src = 'Oakland.jpeg';
+
+    let w = 0;
+    let h = 0;
+    let dpr = window.devicePixelRatio || 1;
+
+    let lastX = null;
+    let lastY = null;
+    let targetX = null;
+    let targetY = null;
+    let brushPoints = [];
+    let isAnimating = false;
+    const damping = 0.15; // Lower value = more damping/delay
+
+    function resizeCanvas() {
+        const rect = wrapper.getBoundingClientRect();
+        w = rect.width;
+        h = rect.height;
+        dpr = window.devicePixelRatio || 1;
+
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+    }
+
+    function addBrushStroke(x, y) {
+        targetX = x;
+        targetY = y;
+        
+        if (lastX === null || lastY === null) {
+            lastX = x;
+            lastY = y;
+            return;
+        }
+    }
+
+    function updateBrushPosition() {
+        if (targetX === null || targetY === null || lastX === null || lastY === null) {
+            return;
+        }
+
+        // Apply damping to smoothly move towards target
+        lastX += (targetX - lastX) * damping;
+        lastY += (targetY - lastY) * damping;
+
+        // Only add stroke if we've moved enough
+        const dx = lastX - (lastX - (targetX - lastX) / damping);
+        const dy = lastY - (lastY - (targetY - lastY) / damping);
+        const dist = Math.hypot(dx, dy);
+        
+        if (dist < 1) return;
+
+        brushPoints.push({
+            x: lastX,
+            y: lastY,
+            r: 75 + Math.random() * 20,
+            a: 1
+        });
+    }
+
+    function drawFrame() {
+        ctx.clearRect(0, 0, w, h);
+
+        // Update brush position with damping
+        updateBrushPosition();
+
+        brushPoints = brushPoints
+            .map(p => ({ ...p, a: p.a - 0.015 }))
+            .filter(p => p.a > 0);
+
+        if (revealImg.complete && w > 0 && h > 0) {
+            const imgAspect = revealImg.naturalWidth / revealImg.naturalHeight;
+            const canvasAspect = w / h;
+
+            let drawWidth, drawHeight, offsetX, offsetY;
+
+            if (imgAspect > canvasAspect) {
+                drawHeight = h;
+                drawWidth = h * imgAspect;
+                offsetX = -(drawWidth - w) / 2;
+                offsetY = 0;
+            } else {
+                drawWidth = w;
+                drawHeight = w / imgAspect;
+                offsetX = 0;
+                offsetY = -(drawHeight - h) / 2;
+            }
+
+            ctx.save();
+            
+            // Draw the image only in areas where we've painted
+            for (const p of brushPoints) {
+                const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+                g.addColorStop(0, `rgba(0,0,0,${0.95 * p.a})`);
+                g.addColorStop(0.6, `rgba(0,0,0,${0.55 * p.a})`);
+                g.addColorStop(1, `rgba(0,0,0,0)`);
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.globalCompositeOperation = 'source-in';
+            ctx.drawImage(revealImg, offsetX, offsetY, drawWidth, drawHeight);
+
+            ctx.restore();
+        }
+
+        requestAnimationFrame(drawFrame);
+    }
+
+    wrapper.addEventListener('mousemove', (e) => {
+        const rect = wrapper.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        addBrushStroke(x, y);
+    });
+
+    wrapper.addEventListener('mouseenter', (e) => {
+        const rect = wrapper.getBoundingClientRect();
+        lastX = e.clientX - rect.left;
+        lastY = e.clientY - rect.top;
+    });
+
+    wrapper.addEventListener('mouseleave', () => {
+        lastX = null;
+        lastY = null;
+        targetX = null;
+        targetY = null;
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+
+    revealImg.addEventListener('load', () => {
+        resizeCanvas();
+        if (!isAnimating) {
+            isAnimating = true;
+            drawFrame();
+        }
+    });
+
+    // Ensure animation starts even if image is cached
+    if (revealImg.complete) {
+        resizeCanvas();
+        isAnimating = true;
+        drawFrame();
+    }
+}
+
+// Initialize reveal painting when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRevealPainting);
+} else {
+    initRevealPainting();
+}
