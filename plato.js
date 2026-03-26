@@ -265,33 +265,15 @@ async function initializeNextRunCountdown() {
     if (!countdownElement) return;
 
     try {
-        // Try to fetch club data from Strava
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        const stravaUrl = 'https://www.strava.com/clubs/platorunclub';
-        
-        const response = await fetch(proxyUrl + stravaUrl, { timeout: 5000 });
-        const html = await response.text();
-
-        // Parse the HTML to find events
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        
-        // Look for event dates in the page
-        const nextRunDate = extractNextRunDate(doc);
-        
-        if (nextRunDate) {
-            startCountdown(nextRunDate, countdownElement);
-            return;
+        // Fallback: Use default run schedule (Tuesday & Thursday at 6:30 AM, Wednesday at 5:30 PM)
+        const nextRun = getNextScheduledRun();
+        if (nextRun) {
+            startCountdown(nextRun, countdownElement);
+        } else {
+            countdownElement.innerHTML = '<strong>Next run coming soon →</strong>';
         }
     } catch (error) {
-        console.log('Strava fetch error:', error);
-    }
-
-    // Fallback: Use default run schedule (Tuesday & Thursday at 6:30 AM, Wednesday at 5:30 PM)
-    const nextRun = getNextScheduledRun();
-    if (nextRun) {
-        startCountdown(nextRun, countdownElement);
-    } else {
+        console.log('Countdown error:', error);
         countdownElement.innerHTML = '<strong>Next run coming soon →</strong>';
     }
 }
