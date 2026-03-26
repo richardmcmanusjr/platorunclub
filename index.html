@@ -76,8 +76,11 @@
         <a href="events.html" class="cta-button primary"><span>JOIN THE CLUB</span></a>
         </div>
 
-        <div class="hero-logo">
-        <img src="PlatoBlur2.png" alt="PLATO Logo">
+        <div class="hero-logo" id="heroLogoContainer">
+            <div class="hero-logo-reveal-wrapper">
+                <img src="PlatoBlur2.png" alt="PLATO Logo" class="hero-logo-img">
+                <img src="Oakland.jpeg" alt="Oakland" class="hero-logo-reveal-img">
+            </div>
         </div>
     </div>
     <div id="nextRunCountdown" class="next-run-countdown-hero">
@@ -310,5 +313,53 @@
     </footer>
 
     <script src="plato.js"></script>
+    <script>
+        // Cursor-following blob reveal effect with organic motion
+        const heroLogoContainer = document.getElementById('heroLogoContainer');
+        const revealWrapper = heroLogoContainer?.querySelector('.hero-logo-reveal-wrapper');
+        
+        if (revealWrapper) {
+            let currentX = 50;
+            let currentY = 50;
+            let targetX = 50;
+            let targetY = 50;
+            let animationId;
+            
+            const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+            
+            const smoothUpdate = () => {
+                // Ease towards target position with smooth damping
+                currentX += (targetX - currentX) * 0.15;
+                currentY += (targetY - currentY) * 0.15;
+                
+                revealWrapper.style.setProperty('--cursor-x', `${currentX}%`);
+                revealWrapper.style.setProperty('--cursor-y', `${currentY}%`);
+                
+                animationId = requestAnimationFrame(smoothUpdate);
+            };
+            
+            revealWrapper.addEventListener('mousemove', (e) => {
+                const rect = revealWrapper.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Convert to percentage for CSS
+                targetX = (x / rect.width) * 100;
+                targetY = (y / rect.height) * 100;
+                
+                if (!animationId) {
+                    animationId = requestAnimationFrame(smoothUpdate);
+                }
+            });
+            
+            revealWrapper.addEventListener('mouseleave', () => {
+                // Cancel animation and let fade out via CSS
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+            });
+        }
+    </script>
 </body>
 </html>
