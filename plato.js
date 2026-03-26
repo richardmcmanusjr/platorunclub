@@ -453,7 +453,7 @@ function initRevealPainting() {
         brushPoints.push({
             x: lastX,
             y: lastY,
-            r: 75 + Math.random() * 20,
+            r: 120 + Math.random() * 20,
             a: 1
         });
     }
