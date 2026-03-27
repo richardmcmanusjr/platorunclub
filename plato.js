@@ -547,10 +547,65 @@ function initRevealPainting() {
         drawFrame();
     }
 }
-
 // Initialize reveal painting when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initRevealPainting);
 } else {
     initRevealPainting();
 }
+
+// Event Modal Handler - Initialize immediately
+function initEventModal() {
+    const eventCards = document.querySelectorAll('.event-card');
+    const eventModal = document.getElementById('eventModal');
+    const modalClose = document.getElementById('modalClose');
+    const modalOverlay = document.querySelector('.modal-overlay');
+    const joinButton = document.getElementById('joinButton');
+
+    if (!eventModal) {
+        console.log('Event modal elements not found');
+        return;
+    }
+
+    // Open modal on card click
+    eventCards.forEach(card => {
+        card.addEventListener('click', function(e) {
+            e.preventDefault();
+            eventModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    // Open modal on join button click
+    if (joinButton) {
+        joinButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            eventModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+    }
+
+    // Close modal handlers
+    function closeModal() {
+        eventModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', closeModal);
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && eventModal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEventModal);
+} else {
+    initEventModal();
+}
+
