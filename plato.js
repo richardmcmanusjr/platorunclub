@@ -349,7 +349,6 @@ function initMobileDefinitionScroll() {
         // Scale up logo as user scrolls
         heroLogo.style.transform = `scale(${1 + scrollProgress * 0.2})`;
         
-        console.log('Scroll - scrolled:', Math.round(scrolled), 'scrollProgress:', scrollProgress.toFixed(2));
     }, { passive: true });
 }
 
@@ -461,8 +460,8 @@ function initRevealPainting() {
     const canvas = document.getElementById('revealCanvas');
     if (!wrapper || !canvas) return;
 
-    const isMobile = window.matchMedia('(max-width: 768px)').matches || 
-                     window.innerWidth <= 768;
+    const isMobile = window.matchMedia('(max-width: 1024px)').matches || 
+                     window.innerWidth <= 1024;
     
     const ctx = canvas.getContext('2d');
     const revealImg = new Image();
