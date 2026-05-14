@@ -287,10 +287,14 @@ function initSmoothScroll() {
             const startsAtTop = window.scrollY < 100;
             const targetBelowHero = target.offsetTop >= heroBottom - 10;
             const targetIsHero = target === heroEl || target.offsetTop <= 100;
+            const isHomeLink = href === '#home';
 
-            if (!isMobileViewport() && targetIsHero && typeof window.platoReverseHero === 'function') {
+            if (!isMobileViewport() && isHomeLink && typeof window.platoReverseHero === 'function') {
                 // Logo / top-of-page link: rewind the reveal and scroll up
                 // in parallel so the hero is in its initial state on arrival.
+                window.platoReverseHero();
+                scrollToTarget();
+            } else if (!isMobileViewport() && targetIsHero && typeof window.platoReverseHero === 'function') {
                 window.platoReverseHero();
                 scrollToTarget();
             } else if (!isMobileViewport() && startsAtTop && targetBelowHero && typeof window.platoPlayHero === 'function') {
@@ -975,7 +979,7 @@ function initRevealPainting() {
     window.platoReverseHero = function (onComplete, durationMs) {
         const finish = () => { if (typeof onComplete === 'function') onComplete(); };
 
-        if (isMobile) { finish(); return; }
+        if (isMobile()) { finish(); return; }
 
         if (animationProgress < 0.01) { finish(); return; }
 
