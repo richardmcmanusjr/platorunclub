@@ -598,12 +598,10 @@ a:hover {
     justify-items: center;
     position: relative;
     z-index: 2;
-    transition: transform 0.15s ease-out;
 }
 
 .hero-text {
     z-index: 2;
-    transition: transform 0.15s ease-out, opacity 0.15s ease-out;
     width: 100%;
     justify-self: start;
 }
@@ -612,9 +610,7 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.15s ease-out;
     opacity: 1;
-    transform: translateX(0);
     width: 100%;
     height: 100%;
 }

@@ -33,9 +33,6 @@ function initLoadingScreen() {
     setTimeout(hide, MAX_DISPLAY_MS);
 }
 
-window.addEventListener('load', () => {
-    window.scrollTo(0, 0);
-});
 
 // Initialize the splash as early as possible — running it inside DOMContentLoaded
 // (where the rest of the page setup lives) means the load event has already
@@ -320,7 +317,6 @@ function initMobileDefinitionScroll() {
     const isMobile = window.matchMedia('(max-width: 768px)').matches || 
                      window.innerWidth <= 768;
     
-    console.log('Mobile definition scroll - isMobile:', isMobile, 'viewport:', window.innerWidth);
     
     if (!isMobile) return;
 
@@ -334,8 +330,6 @@ function initMobileDefinitionScroll() {
         return;
     }
 
-    console.log('Initializing mobile scroll animation');
-    console.log('Hero height:', hero.offsetHeight);
 
     const heroHeight = hero.offsetHeight;
     
@@ -462,6 +456,7 @@ function startCountdown(targetDate, element) {
 let revealReady = false;
 
 function initRevealPainting() {
+    
     const wrapper = document.getElementById('revealWrapper');
     const canvas = document.getElementById('revealCanvas');
     if (!wrapper || !canvas) return;
@@ -686,7 +681,7 @@ function initRevealPainting() {
     // between phase boundaries (the cause of the "disappearing logo" bug).
     function applyHeroTransforms() {
         if (isMobile) return;
-
+        
         const heroContent = document.querySelector('.hero-content');
         const heroText = document.querySelector('.hero-text');
         const heroLogo = document.querySelector('.hero-logo');
@@ -707,6 +702,7 @@ function initRevealPainting() {
 
         // Scale grows in phase 2, then keeps growing slightly through phase 3.
         const scale = 1 + phase2 * 0.2 + p3 * 0.15;
+    
 
         heroContent.style.transform = `translateX(${phase1 * centerTranslation}%)`;
         heroLogo.style.transform = `scale(${scale})`;
@@ -818,10 +814,7 @@ function initRevealPainting() {
     });
 
     window.addEventListener('wheel', (e) => {
-        if (!revealReady) {
-            e.preventDefault();
-            return;
-        }
+
         // Skip wheel event handling on mobile - use scroll-based animation instead
         if (isMobile) return;
 
@@ -861,6 +854,7 @@ function initRevealPainting() {
             const pixelOffset = viewportCenter - imageCurrentCenter;
             centerTranslation = (pixelOffset / heroContentRect.width) * 100;
             translationCalculated = true;
+            
         }
 
         // Update phase 3 progress target — applyHeroTransforms() in the
@@ -888,22 +882,21 @@ function initRevealPainting() {
         }
     }, { passive: false });
 
+    resizeCanvas();
+
+    if (!isAnimating) {
+        isAnimating = true;
+        drawFrame();
+    }
+
     revealImg.addEventListener('load', () => {
         revealReady = true;
         resizeCanvas();
-        if (!isAnimating) {
-            isAnimating = true;
-            drawFrame();
-        }
     });
 
-    if (revealImg.complete) {
+    if (revealImg.complete && revealImg.naturalWidth > 0) {
         revealReady = true;
         resizeCanvas();
-        if (!isAnimating) {
-            isAnimating = true;
-            drawFrame();
-        }
     }
 
     window.addEventListener('resize', resizeCanvas);
