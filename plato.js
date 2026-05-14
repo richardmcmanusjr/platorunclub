@@ -202,10 +202,14 @@ function initMobileMenu() {
     });
 }
 
+function isMobileViewport() {
+    return window.matchMedia('(max-width: 768px)').matches || window.innerWidth <= 768;
+}
+
 function initFadeInObserver() {
     // Check for reduced motion preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isMobileViewport();
     
     // Adjust root margin for mobile to trigger animations earlier
     const rootMargin = isMobile ? '0px 0px -50px 0px' : '0px 0px -100px 0px';
@@ -260,7 +264,6 @@ function initEmailForm() {
 
 function initSmoothScroll() {
     const offset = 80;
-    const isMobile = window.innerWidth <= 768;
 
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -274,6 +277,7 @@ function initSmoothScroll() {
                 // offsetTop is recomputed AFTER any hero animation has played,
                 // in case the hero plays + something reflows beneath it.
                 const top = target.offsetTop - offset;
+                const isMobile = isMobileViewport();
                 const behavior = isMobile && window.devicePixelRatio > 2 ? 'auto' : 'smooth';
                 window.scrollTo({ top, behavior });
             };
@@ -284,12 +288,12 @@ function initSmoothScroll() {
             const targetBelowHero = target.offsetTop >= heroBottom - 10;
             const targetIsHero = target === heroEl || target.offsetTop <= 100;
 
-            if (!isMobile && targetIsHero && typeof window.platoReverseHero === 'function') {
+            if (!isMobileViewport() && targetIsHero && typeof window.platoReverseHero === 'function') {
                 // Logo / top-of-page link: rewind the reveal and scroll up
                 // in parallel so the hero is in its initial state on arrival.
                 window.platoReverseHero();
                 scrollToTarget();
-            } else if (!isMobile && startsAtTop && targetBelowHero && typeof window.platoPlayHero === 'function') {
+            } else if (!isMobileViewport() && startsAtTop && targetBelowHero && typeof window.platoPlayHero === 'function') {
                 window.platoPlayHero(scrollToTarget);
             } else {
                 scrollToTarget();
@@ -460,8 +464,7 @@ function initRevealPainting() {
     const canvas = document.getElementById('revealCanvas');
     if (!wrapper || !canvas) return;
 
-    const isMobile = window.matchMedia('(max-width: 1024px)').matches || 
-                     window.innerWidth <= 1024;
+    const isMobile = () => window.matchMedia('(max-width: 1024px)').matches || window.innerWidth <= 1024;
     
     const ctx = canvas.getContext('2d');
     const revealImg = new Image();
@@ -679,7 +682,7 @@ function initRevealPainting() {
     // Runs every frame so the logo can never end up in an undefined state
     // between phase boundaries (the cause of the "disappearing logo" bug).
     function applyHeroTransforms() {
-        if (isMobile) return;
+        if (isMobile()) return;
         
         const heroContent = document.querySelector('.hero-content');
         const heroText = document.querySelector('.hero-text');
@@ -815,7 +818,7 @@ function initRevealPainting() {
     window.addEventListener('wheel', (e) => {
 
         // Skip wheel event handling on mobile - use scroll-based animation instead
-        if (isMobile) return;
+        if (isMobile()) return;
 
         const nearTop = window.scrollY <= 100;
         if (!nearTop) return;
@@ -910,7 +913,7 @@ function initRevealPainting() {
     window.platoPlayHero = function (onComplete, durationMs) {
         const finish = () => { if (typeof onComplete === 'function') onComplete(); };
 
-        if (isMobile) { finish(); return; }
+        if (isMobile()) { finish(); return; }
 
         const alreadyDone =
             smoothedAnimationProgress >= 0.99 &&
@@ -1006,7 +1009,6 @@ function initGalleryAnimations() {
     const items = document.querySelectorAll('.gallery-section .gallery-item');
     if (items.length === 0) return;
 
-    const isMobile = window.innerWidth <= 768;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     // Cycled per-index drift directions. Works for any number of items —
@@ -1020,8 +1022,6 @@ function initGalleryAnimations() {
         { x: -0.08, y:  0.05 },
         { x:  0.10, y: -0.07 },
     ];
-    const strength = isMobile ? 0.35 : 1.0;
-
     // Anchor the parallax to the section so motion only happens while it's
     // near the viewport. This avoids large drifts on long pages.
     const section = document.getElementById('gallery-section');
@@ -1045,6 +1045,7 @@ function initGalleryAnimations() {
         }
 
         // Pixel offset proportional to viewport height so motion scales nicely.
+        const strength = isMobileViewport() ? 0.35 : 1.0;
         const base = progress * vh * 0.15 * strength;
 
         items.forEach((item, index) => {
