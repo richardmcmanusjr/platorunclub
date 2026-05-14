@@ -1290,6 +1290,10 @@ a:hover {
     pointer-events: auto;
 }
 
+#join .event-card {
+    margin-bottom: 4rem;
+}
+
 .event-card::before {
     display: none;
 }
@@ -2413,7 +2417,7 @@ a.event-card:hover {
    Tilt + scale variations cycle by :nth-child so additions stay varied.
    --------------------------------------------------------------- */
 .gallery-section {
-    padding: 4rem 2rem 6rem;
+    padding: 4rem 2rem 2rem;
     position: relative;
     z-index: 2;
     width: 100%;
@@ -2527,7 +2531,7 @@ a.event-card:hover {
 
 @media (max-width: 480px) {
     .gallery-section {
-        padding: 2rem 1rem 3rem;
+        padding: 2rem 1rem 2rem;
     }
 
     .gallery-section .section-subtitle {
@@ -2564,7 +2568,7 @@ a.event-card:hover {
     font-family: var(--font-accent);
     font-size: 2.5rem;
     font-weight: 400;
-    margin-bottom: 2rem;
+    margin-bottom: 5rem;
     text-align: center;
     letter-spacing: 0.05em;
 }
