@@ -634,7 +634,8 @@ a:hover {
     inset: 0;
     width: 100%;
     height: 100%;
-    mask-image: radial-gradient(black 50%, transparent 70%);
+    -webkit-mask-image: radial-gradient(black 50%, transparent 70%);
+            mask-image: radial-gradient(black 50%, transparent 70%);
     mask-composite: intersect;
     object-fit: cover;
     border-radius: 50%;
@@ -2038,7 +2039,7 @@ a.event-card:hover {
     .hero {
         height: auto;
         min-height: 100vh;
-        padding-top: 6.5rem;
+        padding-top: 5.5rem;
         padding-bottom: 4rem;
     }
 
@@ -2049,7 +2050,7 @@ a.event-card:hover {
     }
 
     .dictionary-entry {
-        padding: 0 1.5rem;
+        padding: 1rem 1.5rem;
         max-width: 640px;
         margin: 0 auto;
     }
@@ -2075,23 +2076,27 @@ a.event-card:hover {
     .hero {
         height: 100vh;
         min-height: 100vh;
-        padding-top: 0rem;
+        /* Clear the fixed navbar so the dictionary entry doesn't slip
+           underneath it when the hero content is tall. */
+        padding-top: 4.5rem;
         padding-bottom: 0rem;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        /* flex-start instead of center so the navbar padding is respected
+           when content is taller than the viewport. */
+        justify-content: flex-start;
         position: relative;
         overflow: hidden;
     }
 
     .hero-content {
         grid-template-columns: 1fr;
-        padding: 2rem 1.5rem;
+        padding: 0 1.5rem;
         height: 100%;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        gap: 1.5rem;
+        justify-content: flex-start;
+        gap: 3.25rem;
         width: 100%;
         position: relative;
         transform-origin: center top;
@@ -2111,7 +2116,7 @@ a.event-card:hover {
     .hero-logo {
         order: 2;
         flex: 1;
-        min-height: 300px;
+        min-height: 220px;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -2433,18 +2438,18 @@ a.event-card:hover {
     font-weight: 100;
 }
 
-/* Instagram Section */
-/* Gallery Section - Staggered Layout */
+/* ---------------------------------------------------------------
+   Gallery — "polaroid wall" masonry
+   Layout uses CSS columns so any number of images flows naturally.
+   Add a new figure.gallery-item and it just slots in.
+   Tilt + scale variations cycle by :nth-child so additions stay varied.
+   --------------------------------------------------------------- */
 .gallery-section {
-    padding: 4rem 2rem;
+    padding: 4rem 2rem 6rem;
     position: relative;
     z-index: 2;
-    display: block;
-    min-height: auto;
-    margin-top: 2rem;
     width: 100%;
     overflow: visible;
-    overflow-x: visible;
 }
 
 .gallery-section::before {
@@ -2453,17 +2458,16 @@ a.event-card:hover {
 
 .gallery-section .container {
     width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
     position: relative;
     z-index: 1;
-    padding: 0;
-    margin: 0 auto;
-    max-width: 1200px;
     overflow: visible;
-    overflow-x: visible;
 }
 
 .gallery-section .section-subtitle {
-    display: block !important;
+    display: block;
     text-align: center;
     margin-bottom: 3rem;
     font-size: 1rem;
@@ -2473,124 +2477,89 @@ a.event-card:hover {
 .gallery-grid {
     position: relative;
     z-index: 1;
+    column-count: 3;
+    column-gap: 1.5rem;
     width: 100%;
-    height: 800px;
-    overflow: visible;
 }
 
-/* Gallery item wrapper - positioning only */
 .gallery-item {
-    position: absolute;
+    display: block;
+    break-inside: avoid;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        0 12px 32px rgba(0, 0, 0, 0.06);
+    /* --px / --py are driven by the scroll-parallax JS so it composes
+       with the tilt/scale here instead of overwriting them. */
+    transform:
+        translate3d(var(--px, 0), var(--py, 0), 0)
+        rotate(var(--tilt, 0deg))
+        scale(var(--scale, 1));
+    transform-origin: center center;
+    transition: box-shadow 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
 }
 
-/* Gallery image - parallax motion only */
 .gallery-image {
     display: block;
     width: 100%;
-    height: 100%;
+    height: auto;
     object-fit: cover;
-    border-radius: 4px;
-    filter: brightness(1);
     cursor: pointer;
     will-change: transform;
 }
 
-/* Position items in the grid - Image 1 */
-.gallery-item:nth-child(1) {
-    width: 280px;
-    height: 350px;
-    left: 20%;
-    top: 100px;
+/* Tilt + scale variations — cycle every 6 items so additions stay varied */
+.gallery-item:nth-child(6n+1) { --tilt: -2.2deg; --scale: 1.00; }
+.gallery-item:nth-child(6n+2) { --tilt:  1.6deg; --scale: 0.96; }
+.gallery-item:nth-child(6n+3) { --tilt: -1.0deg; --scale: 1.02; }
+.gallery-item:nth-child(6n+4) { --tilt:  2.4deg; --scale: 0.98; }
+.gallery-item:nth-child(6n+5) { --tilt: -1.8deg; --scale: 1.01; }
+.gallery-item:nth-child(6n+6) { --tilt:  0.8deg; --scale: 0.97; }
+
+.gallery-item:hover {
+    /* Override tilt/scale on hover but keep the parallax offset */
+    transform:
+        translate3d(var(--px, 0), var(--py, 0), 0)
+        rotate(0deg)
+        scale(1.04);
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.12),
+        0 24px 48px rgba(0, 0, 0, 0.10);
+    position: relative;
+    z-index: 2;
 }
 
-/* Position items in the grid - Image 2 */
-.gallery-item:nth-child(2) {
-    width: 220px;
-    height: 330px;
-    right: 20%;
-    top: 80px;
+/* Tablet */
+@media (max-width: 1024px) {
+    .gallery-grid {
+        column-count: 3;
+        column-gap: 1.25rem;
+    }
 }
 
-/* Position items in the grid - Image 3 */
-.gallery-item:nth-child(3) {
-    width: 350px;
-    height: 240px;
-    left: calc(50% - 175px);
-    top: 200px;
-}
-
-/* Position items in the grid - Image 4 */
-.gallery-item:nth-child(4) {
-    width: 190px;
-    height: 200px;
-    right: 30%;
-    top: 120px;
-}
-
-/* Position items in the grid - Image 5 */
-.gallery-item:nth-child(5) {
-    width: 240px;
-    height: 320px;
-    left: 40%;
-    top: 250px;
-}
-
-/* Hover effects */
-.gallery-image:hover {
-    filter: brightness(1.1);
-}
-
-/* Responsive for tablet */
 @media (max-width: 768px) {
     .gallery-section {
-        padding: 3rem 1.5rem;
+        padding: 3rem 1.5rem 4rem;
     }
 
     .gallery-grid {
-        height: 600px;
+        column-count: 2;
+        column-gap: 1rem;
     }
 
-    /* Adjust sizes for tablet */
-    .gallery-item:nth-child(1) {
-        width: 200px;
-        height: 250px;
-        left: 15%;
-        top: 60px;
-    }
-
-    .gallery-item:nth-child(2) {
-        width: 160px;
-        height: 240px;
-        right: 18%;
-        top: 50px;
-    }
-
-    .gallery-item:nth-child(3) {
-        width: 250px;
-        height: 170px;
-        left: calc(50% - 125px);
-        top: 150px;
-    }
-
-    .gallery-item:nth-child(4) {
-        width: 140px;
-        height: 150px;
-        right: 32%;
-        top: 80px;
-    }
-
-    .gallery-item:nth-child(5) {
-        width: 170px;
-        height: 230px;
-        left: 40%;
-        top: 180px;
+    .gallery-item {
+        margin-bottom: 1rem;
     }
 }
 
-/* Responsive for mobile */
 @media (max-width: 480px) {
     .gallery-section {
-        padding: 2rem 1rem;
+        padding: 2rem 1rem 3rem;
     }
 
     .gallery-section .section-subtitle {
@@ -2598,27 +2567,15 @@ a.event-card:hover {
     }
 
     .gallery-grid {
-        height: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        column-count: 1;
+        column-gap: 0;
     }
 
-    /* Stack responsively on mobile */
-    .gallery-image:nth-child(1),
-    .gallery-image:nth-child(2),
-    .gallery-image:nth-child(3),
-    .gallery-image:nth-child(4),
-    .gallery-image:nth-child(5) {
-        position: static;
-        width: 100%;
-        height: 200px;
-        transform: none !important;
+    .gallery-item {
+        /* Flatten the polaroid tilts on phones — they look messy at narrow widths */
+        --tilt: 0deg;
+        --scale: 1;
     }
-
-/* Gallery Animation States */
-.gallery-image {
-    will-change: transform;
 }
 
 /* Community Section */

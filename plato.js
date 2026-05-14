@@ -1,57 +1,50 @@
 // Plato Run Club - Interactive Elements
 
 // Loading Screen Management
-let hasScrolledDown = false;
-let hasScrolledUp = false;
-let maxScrollY = 0;
-let lastScrollY = 0;
-
+//
+// Stays up only while the browser is still fetching the page's resources
+// (stylesheets, images, fonts). Hides as soon as `window.load` fires, with
+// a short minimum so it doesn't flash on a warm cache, and a hard cap so a
+// hung resource can't trap the user behind the splash.
 function initLoadingScreen() {
     const loadingScreen = document.getElementById('loadingScreen');
     if (!loadingScreen) return;
 
-    // Hide loading screen when all conditions are met
-    function checkAndHideLoadingScreen() {
-        if (hasScrolledDown && hasScrolledUp) {
-            loadingScreen.classList.add('hidden');
-        }
+    const MIN_DISPLAY_MS = 350;
+    const MAX_DISPLAY_MS = 8000;
+    const startedAt = performance.now();
+
+    let hidden = false;
+    const hide = () => {
+        if (hidden) return;
+        hidden = true;
+        const elapsed = performance.now() - startedAt;
+        const wait = Math.max(0, MIN_DISPLAY_MS - elapsed);
+        setTimeout(() => loadingScreen.classList.add('hidden'), wait);
+    };
+
+    if (document.readyState === 'complete') {
+        hide();
+    } else {
+        window.addEventListener('load', hide, { once: true });
     }
 
-    // Track scroll position
-    window.addEventListener('scroll', () => {
-        const currentScrollY = window.scrollY;
-
-        // Check if user has scrolled down
-        if (currentScrollY > 100 && !hasScrolledDown) {
-            hasScrolledDown = true;
-            maxScrollY = currentScrollY;
-        } else if (currentScrollY > maxScrollY) {
-            maxScrollY = currentScrollY;
-        }
-
-        // Check if user has scrolled back up after scrolling down
-        if (hasScrolledDown && currentScrollY < maxScrollY - 50 && !hasScrolledUp) {
-            hasScrolledUp = true;
-            checkAndHideLoadingScreen();
-        }
-
-        lastScrollY = currentScrollY;
-    }, { passive: true });
-
-    // Also hide after a maximum time (fallback - 5 seconds)
-    const loadingTimeout = setTimeout(() => {
-        if (!hasScrolledDown || !hasScrolledUp) {
-            hasScrolledDown = true;
-            hasScrolledUp = true;
-            checkAndHideLoadingScreen();
-        }
-    }, 5000);
+    // Safety: never strand the user behind the splash if something hangs.
+    setTimeout(hide, MAX_DISPLAY_MS);
 }
 
 window.addEventListener('load', () => {
     window.scrollTo(0, 0);
-    initLoadingScreen();
 });
+
+// Initialize the splash as early as possible — running it inside DOMContentLoaded
+// (where the rest of the page setup lives) means the load event has already
+// fired in many cached navigations.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLoadingScreen);
+} else {
+    initLoadingScreen();
+}
 
 function waitForStylesheets() {
     return new Promise((resolve) => {
@@ -95,22 +88,25 @@ document.addEventListener('DOMContentLoaded', async function () {
         images: [
             'PLATO.png',
             'PlatoBlur2.png',
-            'Garmin.png',
-            'Myeongseop.png',
-            'Richard.jpg',
-            'Richard2.png',
-            'RichardNanolab.png',
-            'Chacko.png',
-            'Bench.png',
-            'BerkeleyHalfGroup.png',
+            'gallery/Garmin.png',
+            'gallery/Myeongseop.png',
+            'gallery/Richard.jpg',
+            'gallery/Richard2.png',
+            'gallery/Chacko.png',
+            'gallery/ChackoandMyeongseop.png',
+            'gallery/BerkeleyHalfGroup.png',
             'Oakland.jpeg',
+            'gallery/Oakland.jpeg',
+            'gallery/PRC_1.png',
+            'gallery/PRC2.png',
+            'gallery/PRC3.png',
+            'gallery/PRC4.png',
+            'gallery/PRC_8.png',
             'wafer.png',
-            'pumps.png',
             'grit.png',
             'grit2.png',
         ],
         videos: [
-            'RunClub.mov'
         ]
     };
 
@@ -268,22 +264,38 @@ function initEmailForm() {
 function initSmoothScroll() {
     const offset = 80;
     const isMobile = window.innerWidth <= 768;
-    
+
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
-            if (href !== '#' && document.querySelector(href)) {
-                e.preventDefault();
-                const target = document.querySelector(href);
-                const targetPosition = target.offsetTop - offset;
+            if (href === '#' || !document.querySelector(href)) return;
 
-                // Use instant scroll on slow mobile devices, smooth on others
+            e.preventDefault();
+            const target = document.querySelector(href);
+
+            const scrollToTarget = () => {
+                // offsetTop is recomputed AFTER any hero animation has played,
+                // in case the hero plays + something reflows beneath it.
+                const top = target.offsetTop - offset;
                 const behavior = isMobile && window.devicePixelRatio > 2 ? 'auto' : 'smooth';
-                
-                window.scrollTo({
-                    top: targetPosition,
-                    behavior: behavior
-                });
+                window.scrollTo({ top, behavior });
+            };
+
+            const heroEl = document.querySelector('.hero');
+            const heroBottom = heroEl ? heroEl.offsetTop + heroEl.offsetHeight : 0;
+            const startsAtTop = window.scrollY < 100;
+            const targetBelowHero = target.offsetTop >= heroBottom - 10;
+            const targetIsHero = target === heroEl || target.offsetTop <= 100;
+
+            if (!isMobile && targetIsHero && typeof window.platoReverseHero === 'function') {
+                // Logo / top-of-page link: rewind the reveal and scroll up
+                // in parallel so the hero is in its initial state on arrival.
+                window.platoReverseHero();
+                scrollToTarget();
+            } else if (!isMobile && startsAtTop && targetBelowHero && typeof window.platoPlayHero === 'function') {
+                window.platoPlayHero(scrollToTarget);
+            } else {
+                scrollToTarget();
             }
         });
     });
@@ -481,41 +493,34 @@ function initRevealPainting() {
     let isAnimating = false;
 
     let wheelAccumulator = 0;
-    const phase123MaxWheel = 3000;
+    // Total wheel deltaY required to complete the whole hero reveal.
+    // ~1800 feels like ~1 fast trackpad flick or a few mouse-wheel clicks.
+    const phase123MaxWheel = 1800;
     let centerTranslation = 0;
     let translationCalculated = false;
 
-    // Phase 3 (Z trail)
-    let phase3Progress = 0;              // wheel-driven target 0..1
-    let smoothedPhase3Progress = 0;      // spring-smoothed 0..1
+    // Phase 3 (Z trail) — target & smoothed
+    let phase3Progress = 0;
+    let smoothedPhase3Progress = 0;
     let phase3Velocity = 0;
     let lastStampedPhase3Progress = -1;
-    let phase3FullyCompleted = false;
-    const phase3ReleaseThreshold = 0.88;
-    
-    // Springy scroll after phase 3
-    let targetScrollY = 0;
-    let currentScrollY = 0;
-    let scrollVelocity = 0;
-    let isInSpringScroll = false;
-    let lastWheelVelocity = 0;
-    
-    // Phases 1 & 2 smoothing
-    let animationProgress = 0;           // wheel-driven target 0..1
-    let smoothedAnimationProgress = 0;   // spring-smoothed 0..1
-    let animationVelocity = 0;
-    let lastAnimationProgress = 0;       // track last progress for momentum
+    // Below this we hijack the wheel; at/above this we let the page scroll
+    // naturally so the user can keep going into the gallery.
+    const phase3ReleaseThreshold = 0.92;
 
-    // Spring tuning
-    const phase3Stiffness = 0.06;
-    const phase3Damping = 0.82;
-    const maxPhase3Speed = 0.012;
-    
-    const scrollStiffness = 0.08;
-    const scrollDamping = 0.85;
-    
+    // Phases 1 & 2 — target & smoothed
+    let animationProgress = 0;
+    let smoothedAnimationProgress = 0;
+    let animationVelocity = 0;
+
+    // Spring tuning — stiffer than before so the painting tracks the wheel
+    // instead of lagging behind by half a second.
+    const phase3Stiffness = 0.14;
+    const phase3Damping = 0.78;
+    const maxPhase3Speed = 0.04;
+
     const phase12Stiffness = 0.9;
-    const phase12Damping = 0.2;
+    const phase12Damping = 0.4;
     const maxPhase12Speed = 0.04;
 
     // Mouse hover painting damping
@@ -676,32 +681,43 @@ function initRevealPainting() {
         return { drawWidth, drawHeight, offsetX, offsetY };
     }
 
-    function updateDOMForPhase3() {
-        const heroLogo = document.querySelector('.hero-logo');
-        if (!heroLogo) return;
+    // Single source of truth for hero element transforms.
+    // Runs every frame so the logo can never end up in an undefined state
+    // between phase boundaries (the cause of the "disappearing logo" bug).
+    function applyHeroTransforms() {
+        if (isMobile) return;
 
-        // Always maintain visibility during phase 3
-        // Ensure it's not hidden by any CSS
+        const heroContent = document.querySelector('.hero-content');
+        const heroText = document.querySelector('.hero-text');
+        const heroLogo = document.querySelector('.hero-logo');
+        if (!heroContent || !heroLogo || !heroText) return;
+
+        // Always keep the logo present — it is the visual anchor of the hero.
         heroLogo.style.visibility = 'visible';
         heroLogo.style.opacity = '1';
-        heroLogo.style.display = 'block';
 
-        // Update scale during phase 3
-        if (phase3Progress > 0 || smoothedPhase3Progress > 0) {
-            heroLogo.style.transform = `scale(${1.2 + smoothedPhase3Progress * 0.15})`;
-        } else if (smoothedAnimationProgress > 0.5) {
-            // During transition from phase 2 to 3, keep scale from phase 2
-            // to prevent flickering or disappearance
-            const phase2Progress = Math.max(0, (smoothedAnimationProgress - 0.25) / 0.25);
-            heroLogo.style.transform = `scale(${1 + phase2Progress * 0.2})`;
-        }
+        const a = smoothedAnimationProgress;
+        const p3 = smoothedPhase3Progress;
+
+        // Phase 1 (0 → 0.25): hero-content slides to center the logo
+        const phase1 = Math.min(1, a / 0.25);
+
+        // Phase 2 (0.25 → 0.5): logo scales up, text slides out and fades
+        const phase2 = Math.max(0, Math.min(1, (a - 0.25) / 0.25));
+
+        // Scale grows in phase 2, then keeps growing slightly through phase 3.
+        const scale = 1 + phase2 * 0.2 + p3 * 0.15;
+
+        heroContent.style.transform = `translateX(${phase1 * centerTranslation}%)`;
+        heroLogo.style.transform = `scale(${scale})`;
+        heroText.style.transform = `translateX(${-phase2 * 60}vw)`;
+        heroText.style.opacity = `${Math.max(0, 1 - phase2 * 1.5)}`;
     }
 
     function drawFrame() {
         ctx.clearRect(0, 0, w, h);
 
         updateBrushPosition();
-
 
         brushPoints = brushPoints
             .map(p => ({ ...p, a: p.a - 0.008 }))
@@ -716,45 +732,11 @@ function initRevealPainting() {
         smoothedAnimationProgress = Math.max(0, Math.min(1, smoothedAnimationProgress));
 
         if (
-            Math.abs(animationVelocity) < 0.00001 &&
-            Math.abs(animationProgress - smoothedAnimationProgress) < 0.00001
+            Math.abs(animationVelocity) < 0.0005 &&
+            Math.abs(animationProgress - smoothedAnimationProgress) < 0.0005
         ) {
             animationVelocity = 0;
             smoothedAnimationProgress = animationProgress;
-        }
-
-        // Add momentum carryover - let animation coast slightly when wheel stops
-        if (animationProgress === lastAnimationProgress && Math.abs(animationVelocity) > 0.0001) {
-            // Wheel input stopped, but we have momentum - let it coast
-            const momentumDeceleration = 0.92;
-            animationVelocity *= momentumDeceleration;
-            smoothedAnimationProgress += animationVelocity;
-            smoothedAnimationProgress = Math.max(0, Math.min(1, smoothedAnimationProgress));
-        }
-        lastAnimationProgress = animationProgress;
-
-        // Update DOM for phases 1 & 2 with smoothed progress
-        // Skip on mobile - mobile uses scroll-based vertical animation instead
-        if (smoothedAnimationProgress < 1 && !isMobile) {
-            const heroContent = document.querySelector('.hero-content');
-            const heroText = document.querySelector('.hero-text');
-            const heroLogo = document.querySelector('.hero-logo');
-
-            if (heroContent && heroText && heroLogo) {
-                if (smoothedAnimationProgress < 0.25) {
-                    const moveAmount = smoothedAnimationProgress / 0.25;
-                    heroContent.style.transform = `translateX(${moveAmount * centerTranslation}%)`;
-                    heroLogo.style.transform = 'scale(1)';
-                    heroText.style.opacity = '1';
-                    heroText.style.transform = 'translateX(0)';
-                } else if (smoothedAnimationProgress < 0.5) {
-                    const phase2Progress = (smoothedAnimationProgress - 0.25) / 0.25;
-                    heroContent.style.transform = `translateX(${centerTranslation}%)`;
-                    heroLogo.style.transform = `scale(${1 + phase2Progress * 0.2})`;
-                    heroText.style.transform = `translateX(${-phase2Progress * 60}vw)`;
-                    heroText.style.opacity = `${Math.max(0, 1 - phase2Progress * 1.5)}`;
-                }
-            }
         }
 
         // Spring-smoothed phase 3 progress
@@ -766,42 +748,13 @@ function initRevealPainting() {
         smoothedPhase3Progress = Math.max(0, Math.min(1, smoothedPhase3Progress));
 
         if (
-            Math.abs(phase3Velocity) < 0.00001 &&
-            Math.abs(phase3Progress - smoothedPhase3Progress) < 0.00001
+            Math.abs(phase3Velocity) < 0.0005 &&
+            Math.abs(phase3Progress - smoothedPhase3Progress) < 0.0005
         ) {
             phase3Velocity = 0;
             smoothedPhase3Progress = phase3Progress;
         }
 
-        // Only mark phase 3 complete when the actual spring-smoothed motion is done
-        phase3FullyCompleted = smoothedPhase3Progress >= 0.999 && Math.abs(phase3Velocity) < 0.001;
-
-        // Handle springy scroll after phase 3 release threshold
-        if (smoothedPhase3Progress >= phase3ReleaseThreshold && !isInSpringScroll && lastWheelVelocity !== 0) {
-            isInSpringScroll = true;
-            currentScrollY = window.scrollY;
-            scrollVelocity = lastWheelVelocity * 10;
-            // Stop all animation progress to prevent jitter
-            animationProgress = 1;
-            wheelAccumulator = phase123MaxWheel;
-            phase3Progress = 1;
-        }
-        
-        if (isInSpringScroll) {
-            // Apply damping to create spring-like momentum decay
-            scrollVelocity *= scrollDamping;
-            currentScrollY += scrollVelocity;
-            window.scrollTo(0, currentScrollY);
-            
-            // Stop spring scroll when velocity settles
-            if (Math.abs(scrollVelocity) < 0.1) {
-                isInSpringScroll = false;
-                scrollVelocity = 0;
-                lastWheelVelocity = 0;
-            }
-        }
-
-        let phase3FrameStamped = false;
         if (phase3Progress > 0 || smoothedPhase3Progress > 0) {
             const basePhase3 = easeInOutSine(smoothedPhase3Progress);
             const baseLast = lastStampedPhase3Progress < 0 ? 0 : easeInOutSine(lastStampedPhase3Progress);
@@ -810,17 +763,12 @@ function initRevealPainting() {
             const easedLast = addCornerSlowdown(baseLast);
 
             if (smoothedPhase3Progress !== lastStampedPhase3Progress || lastStampedPhase3Progress < 0) {
-                // Fill in newly traveled distance (both forward and reverse)
                 stampZTrail(easedLast, easedPhase3);
                 lastStampedPhase3Progress = smoothedPhase3Progress;
             }
-
-            updateDOMForPhase3();
-        } else if (smoothedAnimationProgress >= 0.5) {
-            // Keep logo visible during entire transition phase 2->3 and back
-            // This ensures smooth visibility throughout all animation states
-            updateDOMForPhase3();
         }
+
+        applyHeroTransforms();
 
         if (revealImg && revealImg.complete && w > 0 && h > 0) {
             const { drawWidth, drawHeight, offsetX, offsetY } = getImageDrawRect();
@@ -881,29 +829,20 @@ function initRevealPainting() {
         if (!nearTop) return;
 
         const scrollingDown = e.deltaY > 0;
-        const scrollingUp = e.deltaY < 0;
 
-        // Let springy scroll take over once phase 3 is nearly finished
-        const allowPageScroll =
-            scrollingDown &&
-            smoothedPhase3Progress >= phase3ReleaseThreshold;
-
-        if (allowPageScroll) {
+        // Once the reveal is essentially done, stop hijacking the wheel.
+        // The event falls through to native page scroll so the user can
+        // continue straight into the gallery at normal speed.
+        if (scrollingDown && phase3Progress >= 1 && smoothedPhase3Progress >= phase3ReleaseThreshold) {
             return;
         }
 
         e.preventDefault();
 
         if (scrollingDown) {
-            if (wheelAccumulator < phase123MaxWheel) {
-                wheelAccumulator = Math.min(phase123MaxWheel, wheelAccumulator + e.deltaY);
-                lastWheelVelocity = e.deltaY * 0.3;
-            }
-        } else if (scrollingUp) {
-            if (wheelAccumulator > 0) {
-                wheelAccumulator = Math.max(0, wheelAccumulator + e.deltaY);
-                lastWheelVelocity = e.deltaY * 0.3;
-            }
+            wheelAccumulator = Math.min(phase123MaxWheel, wheelAccumulator + e.deltaY);
+        } else {
+            wheelAccumulator = Math.max(0, wheelAccumulator + e.deltaY);
         }
 
         // Set target progress values - the drawFrame() loop will smooth these
@@ -924,15 +863,15 @@ function initRevealPainting() {
             translationCalculated = true;
         }
 
-        // Handle phase 3 progress and remaining DOM updates
+        // Update phase 3 progress target — applyHeroTransforms() in the
+        // animation loop derives all transforms from this state.
         if (animationProgress < 0.5) {
             phase3Progress = 0;
-            smoothedPhase3Progress = 0;
-            phase3Velocity = 0;
+            // Don't snap smoothedPhase3Progress to 0 — let the spring carry it
+            // back so the reverse paint reads as a graceful retreat.
             lastStampedPhase3Progress = -1;
-            phase3FullyCompleted = false;
-        } else if (animationProgress < 1) {
-            const rawPhase3 = (animationProgress - 0.5) / (1 - 0.5);
+        } else {
+            const rawPhase3 = (animationProgress - 0.5) / 0.5;
             const previousPhase3 = phase3Progress;
             phase3Progress = Math.max(0, Math.min(rawPhase3, 1));
 
@@ -945,22 +884,6 @@ function initRevealPainting() {
                 targetX = p.x * w;
                 targetY = p.y * h;
                 lastStampedPhase3Progress = 0;
-            }
-
-            heroContent.style.transform = `translateX(${centerTranslation}%)`;
-            const heroText = document.querySelector('.hero-text');
-            if (heroText) {
-                heroText.style.transform = 'translateX(-60vw)';
-                heroText.style.opacity = '0';
-            }
-        } else {
-            phase3Progress = 1;
-
-            heroContent.style.transform = `translateX(${centerTranslation}%)`;
-            const heroText = document.querySelector('.hero-text');
-            if (heroText) {
-                heroText.style.transform = 'translateX(-60vw)';
-                heroText.style.opacity = '0';
             }
         }
     }, { passive: false });
@@ -984,65 +907,171 @@ function initRevealPainting() {
     }
 
     window.addEventListener('resize', resizeCanvas);
+
+    // How long the click-driven hero reveal takes, in milliseconds.
+    // Bump this up to slow the Gallery-click animation down.
+    const CLICK_PLAY_DURATION_MS = 1800;
+
+    // Lets a click (e.g. the Gallery nav link) drive the hero reveal at a
+    // controlled pace, then run `onComplete` when the reveal finishes.
+    // Pass a number as the second arg to override the default duration.
+    window.platoPlayHero = function (onComplete, durationMs) {
+        const finish = () => { if (typeof onComplete === 'function') onComplete(); };
+
+        if (isMobile) { finish(); return; }
+
+        const alreadyDone =
+            smoothedAnimationProgress >= 0.99 &&
+            smoothedPhase3Progress >= phase3ReleaseThreshold;
+        if (alreadyDone) { finish(); return; }
+
+        // Compute centerTranslation if the wheel handler hasn't yet.
+        if (!translationCalculated) {
+            const heroContent = document.querySelector('.hero-content');
+            const heroLogo = document.querySelector('.hero-logo');
+            if (heroContent && heroLogo) {
+                const hcr = heroContent.getBoundingClientRect();
+                const hlr = heroLogo.getBoundingClientRect();
+                const pixelOffset = window.innerWidth / 2 - (hlr.left + hlr.width / 2);
+                centerTranslation = (pixelOffset / hcr.width) * 100;
+                translationCalculated = true;
+            }
+        }
+
+        const total = Math.max(200, durationMs || CLICK_PLAY_DURATION_MS);
+        const startProgress = animationProgress;
+        const startTime = performance.now();
+        let seeded = phase3Progress > 0;
+
+        const step = (now) => {
+            const t = Math.min(1, (now - startTime) / total);
+            // easeInOutSine for a gentle accelerate/decelerate
+            const eased = -(Math.cos(Math.PI * t) - 1) / 2;
+            const next = startProgress + (1 - startProgress) * eased;
+
+            wheelAccumulator = next * phase123MaxWheel;
+            animationProgress = next;
+            phase3Progress = next < 0.5 ? 0 : (next - 0.5) / 0.5;
+
+            // Seed brush the first time phase 3 begins.
+            if (!seeded && phase3Progress > 0 && w > 0 && h > 0) {
+                const p = getPointOnZPath(0);
+                pushBrushPoint(p.x * w, p.y * h, 110, 0.95);
+                pushBrushPoint(p.x * w, p.y * h, 92, 0.65);
+                pushBrushPoint(p.x * w, p.y * h, 74, 0.38);
+                targetX = p.x * w;
+                targetY = p.y * h;
+                lastStampedPhase3Progress = 0;
+                seeded = true;
+            }
+
+            if (t < 1) {
+                requestAnimationFrame(step);
+            } else {
+                finish();
+            }
+        };
+        requestAnimationFrame(step);
+    };
+
+    // Reverse counterpart to platoPlayHero: ramps progress back to 0 so the
+    // hero returns to its initial state. Used when the user clicks the logo
+    // to return to the top of the page.
+    window.platoReverseHero = function (onComplete, durationMs) {
+        const finish = () => { if (typeof onComplete === 'function') onComplete(); };
+
+        if (isMobile) { finish(); return; }
+
+        if (animationProgress < 0.01) { finish(); return; }
+
+        const total = Math.max(200, durationMs || CLICK_PLAY_DURATION_MS);
+        const startProgress = animationProgress;
+        const startTime = performance.now();
+
+        const step = (now) => {
+            const t = Math.min(1, (now - startTime) / total);
+            const eased = -(Math.cos(Math.PI * t) - 1) / 2;
+            const next = startProgress * (1 - eased);
+
+            wheelAccumulator = next * phase123MaxWheel;
+            animationProgress = next;
+            phase3Progress = next < 0.5 ? 0 : (next - 0.5) / 0.5;
+            if (next < 0.5) {
+                lastStampedPhase3Progress = -1;
+            }
+
+            if (t < 1) {
+                requestAnimationFrame(step);
+            } else {
+                finish();
+            }
+        };
+        requestAnimationFrame(step);
+    };
 }
 
 function initGalleryAnimations() {
-    const galleryImages = document.querySelectorAll('.gallery-image');
-    if (galleryImages.length === 0) return;
+    const items = document.querySelectorAll('.gallery-section .gallery-item');
+    if (items.length === 0) return;
 
-    // Responsive multipliers based on viewport width
     const isMobile = window.innerWidth <= 768;
-    const multiplier = isMobile ? 0.5 : 1.5;
-    
-    // Stop parallax effect after scrolling to this point
-    const maxScrollForParallax = 1200;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    // Scroll animation multipliers for parallax effect (speed and direction)
-    const getScrollMultiplier = (index) => {
-        const multipliers = [
-            { x: -0.2 * multiplier, y: 0.08 * multiplier },    // Image 1 - left & down
-            { x: 0.25 * multiplier, y: -0.06 * multiplier },   // Image 2 - right & up
-            { x: 0, y: 0.1 * multiplier },                      // Image 3 - down
-            { x: -0.15 * multiplier, y: -0.08 * multiplier },  // Image 4 - left & up
-            { x: 0.2 * multiplier, y: 0.06 * multiplier }      // Image 5 - right & down
-        ];
-        return multipliers[index % multipliers.length];
-    };
+    // Cycled per-index drift directions. Works for any number of items —
+    // adding more rows just continues the cycle.
+    const drifts = [
+        { x: -0.15, y:  0.06 },
+        { x:  0.18, y: -0.05 },
+        { x:  0.00, y:  0.08 },
+        { x: -0.12, y: -0.06 },
+        { x:  0.16, y:  0.04 },
+        { x: -0.08, y:  0.05 },
+        { x:  0.10, y: -0.07 },
+    ];
+    const strength = isMobile ? 0.35 : 1.0;
 
-    // Scroll-based continuous animation - images slide around as you scroll
-    let scrollAnimationFrameId = null;
+    // Anchor the parallax to the section so motion only happens while it's
+    // near the viewport. This avoids large drifts on long pages.
+    const section = document.getElementById('gallery-section');
 
-    const updateParallax = () => {
-        const scrollY = window.scrollY;
-        
-        // Stop parallax animation after a certain scroll point
-        if (scrollY > maxScrollForParallax) {
-            scrollAnimationFrameId = null;
-            return;
+    let rafId = null;
+
+    const update = () => {
+        rafId = null;
+
+        const rect = section ? section.getBoundingClientRect() : null;
+        const vh = window.innerHeight || 1;
+
+        // Progress from the section entering the viewport to leaving it.
+        // 0 when section sits one viewport below; 1 when one viewport above.
+        let progress = 0;
+        if (rect) {
+            progress = 1 - (rect.top + rect.height / 2) / vh;
+            progress = Math.max(-1, Math.min(1, progress));
+        } else {
+            progress = window.scrollY / vh;
         }
 
-        galleryImages.forEach((img, index) => {
-            const multiplier = getScrollMultiplier(index);
-            
-            // Calculate movement based on scroll position using transform3d
-            const moveX = scrollY * multiplier.x;
-            const moveY = scrollY * multiplier.y;
+        // Pixel offset proportional to viewport height so motion scales nicely.
+        const base = progress * vh * 0.15 * strength;
 
-            // Use transform: translate3d for better performance
-            img.style.transform = `translate3d(${moveX}px, ${moveY}px, 0)`;
+        items.forEach((item, index) => {
+            const d = drifts[index % drifts.length];
+            const px = base * d.x;
+            const py = base * d.y;
+            item.style.setProperty('--px', `${px.toFixed(2)}px`);
+            item.style.setProperty('--py', `${py.toFixed(2)}px`);
         });
-
-        scrollAnimationFrameId = null;
     };
 
-    // Initial parallax update on load so images don't snap when first scrolling
-    updateParallax();
+    update();
 
-    // Throttle scroll events with RAF
     window.addEventListener('scroll', () => {
-        if (scrollAnimationFrameId === null) {
-            scrollAnimationFrameId = requestAnimationFrame(updateParallax);
-        }
+        if (rafId === null) rafId = requestAnimationFrame(update);
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+        if (rafId === null) rafId = requestAnimationFrame(update);
     }, { passive: true });
 }
 

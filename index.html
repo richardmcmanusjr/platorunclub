@@ -24,7 +24,7 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="index.html" class="logo">
+            <a href="#home" class="logo">
                 <!-- <img src="PLATO_logo.png" alt="PLATO Logo" class="nav-logo-image"> -->
                 <div class="logo-wrapper">
                     <img src="PLATO.png" alt="PLATO">
@@ -38,10 +38,10 @@
                     <span></span>
                 </button>
                 <ul class="nav-links" id="navLinks">
-                    <li><a href="gallery.html">Gallery</a></li>
+                    <li><a href="#gallery-section">Gallery</a></li>
                     <!-- <li><a href="events.html">Events</a></li> -->
                     <!-- <li><a href="community.html">Community</a></li> -->
-                    <li><a href="events.html">Join</a></li>
+                    <li><a href="#join">Join</a></li>
                 </ul>
             </div>
         </div>
@@ -113,49 +113,70 @@
     </div>
 
     <!-- Photo Gallery Section -->
+    <!-- To add an image: drop a <figure class="gallery-item"> into .gallery-grid.
+         Tilt, scale and parallax are assigned automatically by index. -->
     <section id="gallery-section" class="gallery-section">
         <div class="container">
-            <p class="section-subtitle">Follow Our Journey</p>
             <div class="gallery-grid">
-                <div class="gallery-item">
-                    <img src="InstaImg/PRC_1.png" alt="Plato Run Club moment" class="gallery-image">
-                </div>
-                <div class="gallery-item">
-                    <img src="InstaImg/PRC2.png" alt="Plato Run Club moment" class="gallery-image">
-                </div>
-                <div class="gallery-item">
-                    <img src="InstaImg/PRC3.png" alt="Plato Run Club moment" class="gallery-image">
-                </div>
-                <div class="gallery-item">
-                    <img src="InstaImg/PRC4.png" alt="Plato Run Club moment" class="gallery-image">
-                </div>
-                <div class="gallery-item">
-                    <img src="InstaImg/PRC_8.png" alt="Plato Run Club moment" class="gallery-image">
-                </div>
+                <figure class="gallery-item">
+                    <img src="gallery/PRC_1.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/PRC2.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/PRC3.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/PRC4.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/PRC_8.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/BerkeleyHalfGroup.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/Garmin.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/Myeongseop.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/Oakland.jpeg" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/Richard.jpg" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/Chacko.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/Richard2.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
+                <figure class="gallery-item">
+                    <img src="gallery/ChackoandMyeongseop.png" alt="Plato Run Club moment" class="gallery-image" loading="lazy">
+                </figure>
             </div>
         </div>
     </section>
 
-    <!-- Community Section -->
-    <section id="community-section" class="community-section">
+    <!-- Join The Movement Section -->
+    <section id="join" class="community-section">
         <div class="container">
             <div class="community-content">
-                <h2 class="community-title">Join The Movement</h2>
-                <p class="community-text">
-                    Plato Run Club is more than just a running group—it's a community of thinkers, athletes, and philosophers who believe in the power of movement and intellectual discourse. Whether you're clocking miles or contemplating ideas, there's a place for you.
-                </p>
-                <div class="community-stats">
-                    <div class="stat">
-                        <div class="stat-number">500+</div>
-                        <div class="stat-label">Members</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number">50+</div>
-                        <div class="stat-label">Monthly Runs</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number">100k+</div>
-                        <div class="stat-label">Miles Logged</div>
+                <h2 class="community-title">Just Show Up</h2>
+                <div class="events-grid">
+                    <div class="event-card" data-event-id="evening-runs">
+                        <div class="event-tag"><span>Twice Weekly</span></div>
+                        <h3>Evening Social Runs</h3>
+                        <p class="event-time">Wednesdays and Fridays, 5:00 PM</p>
+                        <p class="event-desc">Recovery miles &mdash; conversational pace.</p>
+                        <div class="event-meta">
+                            <span class="pace">Pace &mdash; 10:00 min/mi</span>
+                            <span class="distance">Distance &mdash; 5k</span>
+                            <span class="distance">Location &mdash; 3rd Floor Sutardja Dai Hall</span>
+                        </div>
                     </div>
                 </div>
             </div>
