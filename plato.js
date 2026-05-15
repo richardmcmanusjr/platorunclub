@@ -321,13 +321,6 @@ function initHeroOpacity() {
 }
 
 function initMobileDefinitionScroll() {
-    // More robust mobile detection
-    const isMobile = window.matchMedia('(max-width: 768px)').matches || 
-                     window.innerWidth <= 768;
-    
-    
-    if (!isMobile) return;
-
     const hero = document.querySelector('.hero');
     const heroContent = document.querySelector('.hero-content');
     const heroText = document.querySelector('.hero-text');
@@ -338,12 +331,21 @@ function initMobileDefinitionScroll() {
         return;
     }
 
+    let isMobileActive = false;
+    let heroHeight = hero.offsetHeight;
+    let mobileSyncFrame = null;
 
-    const heroHeight = hero.offsetHeight;
-    
-    window.addEventListener('scroll', function () {
+    const clearMobileTransforms = () => {
+        heroContent.style.transform = '';
+        heroText.style.opacity = '';
+        heroLogo.style.transform = '';
+    };
+
+    const updateMobileHero = () => {
+        if (!isMobileActive) return;
+
         const scrolled = window.scrollY;
-        
+
         // Clamp scrolled to hero height
         const scrollProgress = Math.min(scrolled / heroHeight, 1);
         
@@ -356,8 +358,41 @@ function initMobileDefinitionScroll() {
         
         // Scale up logo as user scrolls
         heroLogo.style.transform = `scale(${1 + scrollProgress * 0.2})`;
-        
-    }, { passive: true });
+    };
+
+    const syncMobileHeroMode = () => {
+        mobileSyncFrame = null;
+        const shouldBeMobile = isMobileViewport();
+
+        if (shouldBeMobile === isMobileActive) {
+            if (isMobileActive) {
+                heroHeight = hero.offsetHeight;
+                updateMobileHero();
+            }
+            return;
+        }
+
+        isMobileActive = shouldBeMobile;
+
+        if (isMobileActive) {
+            heroHeight = hero.offsetHeight;
+            updateMobileHero();
+        } else {
+            clearMobileTransforms();
+        }
+    };
+
+    const scheduleMobileHeroSync = () => {
+        if (mobileSyncFrame !== null) return;
+
+        mobileSyncFrame = requestAnimationFrame(syncMobileHeroMode);
+    };
+
+    window.addEventListener('scroll', updateMobileHero, { passive: true });
+    window.addEventListener('resize', scheduleMobileHeroSync, { passive: true });
+    window.matchMedia('(max-width: 768px)').addEventListener('change', scheduleMobileHeroSync);
+
+    syncMobileHeroMode();
 }
 
 document.addEventListener('mousemove', function (e) {
@@ -401,8 +436,8 @@ function getNextScheduledRun() {
     const now = new Date();
 
     const scheduledDays = {
-        3: { hour: 17, minute: 0 },
-        5: { hour: 17, minute: 0 },
+        3: { hour: 18, minute: 0 },
+        5: { hour: 18, minute: 0 },
     };
 
     for (let i = 0; i < 8; i++) {
