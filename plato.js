@@ -84,6 +84,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     const extraMedia = {
         images: [
             'PLATO.png',
+            'grit.png',
+            'grit2.png',
             'PlatoBlur2.png',
             'gallery/Garmin.png',
             'gallery/Myeongseop.png',
@@ -99,9 +101,11 @@ document.addEventListener('DOMContentLoaded', async function () {
             'gallery/PRC3.png',
             'gallery/PRC4.png',
             'gallery/PRC_8.png',
+            'gallery/PRC11.png',
+            'gallery/PRC13.png',
+            'gallery/PRC14.png',
+            'gallery/PRC15.png',
             'wafer.png',
-            'grit.png',
-            'grit2.png',
         ],
         videos: [
         ]
@@ -1112,6 +1116,7 @@ function initEventModal() {
     const eventModal = document.getElementById('eventModal');
     const modalClose = document.getElementById('modalClose');
     const modalOverlay = document.querySelector('.modal-overlay');
+    // joinButton handled via normal anchor smooth-scroll; modal binds only to event cards
     const joinButton = document.getElementById('joinButton');
 
     if (!eventModal || !modalClose || !modalOverlay) return;
@@ -1124,13 +1129,9 @@ function initEventModal() {
         });
     });
 
-    if (joinButton) {
-        joinButton.addEventListener('click', function (e) {
-            e.preventDefault();
-            eventModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
-    }
+    // The hero "Join The Club" CTA now links to #join and uses the
+    // site's smooth-scroll behavior. Keep modal opening bound only to
+    // `.event-card` elements above.
 
     function closeModal() {
         eventModal.classList.remove('active');
