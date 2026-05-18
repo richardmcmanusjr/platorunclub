@@ -2429,8 +2429,7 @@ a.event-card:hover {
 }
 
 .gallery-section .container {
-    width: 100%;
-    max-width: 1200px;
+    width: 80%;
     margin: 0 auto;
     padding: 0;
     position: relative;
@@ -2449,7 +2448,7 @@ a.event-card:hover {
 .gallery-grid {
     position: relative;
     z-index: 1;
-    column-count: 3;
+    column-count: 4;
     column-gap: 1.5rem;
     width: 100%;
 }
