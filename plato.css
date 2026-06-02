@@ -1567,6 +1567,70 @@ a.event-card:hover {
     cursor: pointer;
 }
 
+/* Gallery Preview Modal */
+.gallery-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery-modal.active {
+    display: flex;
+}
+
+.gallery-modal-content {
+    position: relative;
+    z-index: 1101;
+    width: min(92vw, 1100px);
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    border-radius: 6px;
+    overflow: visible;
+    animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gallery-modal-image {
+    display: block;
+    max-width: 100%;
+    max-height: 90vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    filter: drop-shadow(0 26px 64px rgba(0, 0, 0, 0.45));
+}
+
+.gallery-modal .modal-close {
+    top: 0.5rem;
+    right: 0.5rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.gallery-modal .modal-close:hover {
+    color: rgba(255, 255, 255, 1);
+}
+
+.gallery-item a {
+    display: block;
+}
+
+.gallery-item a:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.75);
+    outline-offset: 4px;
+}
+
+.gallery-image {
+    cursor: zoom-in;
+}
+
 @media (max-width: 768px) {
     .modal-content {
         padding: 2rem;
@@ -1580,6 +1644,11 @@ a.event-card:hover {
     .modal-link svg {
         width: 80px;
         height: 80px;
+    }
+
+    .gallery-modal-content {
+        width: min(96vw, 1000px);
+        padding: 1rem;
     }
 }
 

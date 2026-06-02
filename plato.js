@@ -182,6 +182,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     initMobileDefinitionScroll();
     initRevealPainting();
     initEventModal();
+    initGalleryModal();
     initGalleryAnimations();
 });
 
@@ -1143,6 +1144,56 @@ function initEventModal() {
 
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && eventModal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+}
+
+function initGalleryModal() {
+    const galleryLinks = document.querySelectorAll('.gallery-section .gallery-item a');
+    const galleryModal = document.getElementById('galleryModal');
+    const galleryModalImage = document.getElementById('galleryModalImage');
+    const galleryModalClose = document.getElementById('galleryModalClose');
+    const galleryModalOverlay = galleryModal ? galleryModal.querySelector('.modal-overlay') : null;
+
+    if (!galleryLinks.length || !galleryModal || !galleryModalImage || !galleryModalClose || !galleryModalOverlay) return;
+
+    const openModal = (imageSrc, imageAlt) => {
+        galleryModalImage.src = imageSrc;
+        galleryModalImage.alt = imageAlt || 'Gallery image preview';
+        galleryModal.classList.add('active');
+        galleryModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeModal = () => {
+        galleryModal.classList.remove('active');
+        galleryModal.setAttribute('aria-hidden', 'true');
+        galleryModalImage.src = '';
+        galleryModalImage.alt = '';
+        document.body.style.overflow = 'auto';
+    };
+
+    galleryLinks.forEach(link => {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            const image = this.querySelector('img');
+            const imageSrc = image?.currentSrc || image?.getAttribute('src') || this.getAttribute('href');
+            if (!imageSrc) return;
+            openModal(imageSrc, image?.alt || 'Gallery image preview');
+        });
+    });
+
+    galleryModalClose.addEventListener('click', closeModal);
+    galleryModalOverlay.addEventListener('click', closeModal);
+    galleryModal.querySelector('.gallery-modal-content').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && galleryModal.classList.contains('active')) {
             closeModal();
         }
     });
